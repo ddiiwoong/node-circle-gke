@@ -25,24 +25,17 @@ jobs:
   deploy_to_staging:
     docker:
       - image: google/cloud-sdk
-    environment:
-      - PROJECT_NAME: "my-app"
-      - GOOGLE_PROJECT_ID: "xxxx"
-      - GOOGLE_COMPUTE_ZONE: "europe-west3-a"
-      - GOOGLE_CLUSTER_NAME: "cluster-1"
     steps:
       - checkout
-      - run: 
+      - run:
           name: Setup Google Cloud SDK
           command: |
-            apt-get install -qq -y gettext
-            echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
-            gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
-            gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
-            gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
-            gcloud --quiet container clusters get-credentials ${GOOGLE_CLUSTER_NAME}
+          echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
+          gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+          gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+          gcloud auth list
       - setup_remote_docker
-      - run: 
+      - run:
           name: Docker build and push
           command: |
             docker build \
@@ -52,7 +45,7 @@ jobs:
             docker tag ${PROJECT_NAME} eu.gcr.io/${GOOGLE_PROJECT_ID}/${PROJECT_NAME}:${CIRCLE_SHA1}
             gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://eu.gcr.io
             docker push eu.gcr.io/${GOOGLE_PROJECT_ID}/${PROJECT_NAME}:${CIRCLE_SHA1}
-      - run: 
+      - run:
           name: Deploy to Kubernetes
           command: |
             envsubst < ${HOME}/project/k8s.yml > ${HOME}/patched_k8s.yml
