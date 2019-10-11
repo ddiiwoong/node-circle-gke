@@ -25,6 +25,7 @@ jobs:
   deploy_to_staging:
     docker:
       - image: google/cloud-sdk
+    context:
     steps:
       - checkout
       - run:
@@ -59,6 +60,7 @@ workflows:
       - deploy_to_staging:
           requires:
             - build_and_test
+          context: sktcl_google
           filters:
             branches:
               only: master
